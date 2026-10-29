@@ -1,8 +1,8 @@
 
-# File: LHMS_850010874.py
+# File: main.py
 # Author: Anmoldeep Singh
 # Description: Langham Hotel Management System
-# Date: 22 October 2026
+# Date: 29 October 2026
 
 rooms_list = []
 allocations_dict = {}
@@ -36,17 +36,17 @@ def main():
                 print("Thank you for using Langham Hotel Management System.")
                 break
             elif choice == "1":
-                print("Add Room selected.")
+                add_room()
             elif choice == "2":
-                print("Delete Room selected.")
+                delete_room()
             elif choice == "3":
-                print("Display Room Details selected.")
+                display_room_details()
             elif choice == "4":
-                print("Allocate Room selected.")
+                allocate_room()
             elif choice == "5":
-                print("Display Allocation Details selected.")
+                display_allocation_details()
             elif choice == "6":
-                print("Billing and De-Allocation selected.")
+                billing_and_deallocation()
             elif choice == "7":
                 print("Save Allocations to File selected.")
             elif choice == "8":
@@ -59,6 +59,183 @@ def main():
         except EOFError:
             print("\nNo more input available. Exiting the application.")
             break
+
+
+def find_room(room_number):
+    """Return the room dictionary for a room number, or None if not found."""
+    for room in rooms_list:
+        if room["room_number"] == room_number:
+            return room
+    return None
+ 
+ 
+def add_room():
+    room_number = input("Enter room number: ").strip()
+    if room_number == "":
+        print("Room number cannot be empty.")
+        return
+ 
+    if find_room(room_number) is not None:
+        print("This room number already exists.")
+        return
+ 
+    room_type = input("Enter room type (Standard/Deluxe/Suite): ").strip()
+    if room_type == "":
+        print("Room type cannot be empty.")
+        return
+ 
+    try:
+        nightly_rate = float(input("Enter nightly rate: "))
+    except ValueError:
+        print("Invalid nightly rate. Enter a valid number.")
+        return
+ 
+    if nightly_rate <= 0:
+        print("Nightly rate must be greater than zero.")
+        return
+ 
+    room = {
+        "room_number": room_number,
+        "room_type": room_type,
+        "nightly_rate": nightly_rate,
+        "available": True,
+    }
+    rooms_list.append(room)
+    print("Room", room_number, "added successfully.")
+ 
+ 
+def delete_room():
+    room_number = input("Enter room number to delete: ").strip()
+    if room_number == "":
+        print("Room number cannot be empty.")
+        return
+ 
+    room = find_room(room_number)
+    if room is None:
+        print("Room", room_number, "does not exist.")
+        return
+ 
+    if room_number in allocations_dict:
+        print("Cannot delete this room because it is allocated.")
+        return
+ 
+    rooms_list.remove(room)
+    print("Room", room_number, "deleted successfully.")
+ 
+ 
+def display_room_details():
+    if len(rooms_list) == 0:
+        print("No rooms are currently available in the room list.")
+        return
+ 
+    print("\n===== ROOM DETAILS =====")
+    for room in rooms_list:
+        print("Room Number:", room["room_number"])
+        print("Room Type:", room["room_type"])
+        print("Nightly Rate: $" + format(room["nightly_rate"], ".2f"))
+        if room["available"]:
+            print("Status: Available")
+        else:
+            print("Status: Occupied")
+        print("-------------------------")
+ 
+ 
+def allocate_room():
+    room_number = input("Enter room number to allocate: ").strip()
+    if room_number == "":
+        print("Room number cannot be empty.")
+        return
+ 
+    room = find_room(room_number)
+    if room is None:
+        print("Room", room_number, "does not exist.")
+        return
+ 
+    if not room["available"]:
+        print("This room is already occupied.")
+        return
+ 
+    customer_name = input("Enter customer name: ").strip()
+    if customer_name == "":
+        print("Customer name cannot be empty.")
+        return
+ 
+    if not any(ch.isalpha() for ch in customer_name):
+        print("Customer name must contain letters.")
+        return
+ 
+    try:
+        nights = int(input("Enter number of nights: "))
+    except ValueError:
+        print("Invalid number of nights. Enter a whole number.")
+        return
+ 
+    if nights <= 0:
+        print("Number of nights must be greater than zero.")
+        return
+ 
+    allocations_dict[room_number] = {
+        "customer_name": customer_name,
+        "room_type": room["room_type"],
+        "nightly_rate": room["nightly_rate"],
+        "number_of_nights": nights,
+    }
+    room["available"] = False
+ 
+    print("Room", room_number, "allocated successfully.")
+    print("Customer:", customer_name)
+    print("Number of nights:", nights)
+ 
+ 
+def display_allocation_details():
+    if len(allocations_dict) == 0:
+        print("There are no current room allocations.")
+        return
+ 
+    print("\n===== ROOM ALLOCATION DETAILS =====")
+    for room_number in allocations_dict:
+        booking = allocations_dict[room_number]
+        charge = booking["nightly_rate"] * booking["number_of_nights"]
+ 
+        print("Room Number:", room_number)
+        print("Customer Name:", booking["customer_name"])
+        print("Room Type:", booking["room_type"])
+        print("Nightly Rate: $" + format(booking["nightly_rate"], ".2f"))
+        print("Number of Nights:", booking["number_of_nights"])
+        print("Estimated Room Charge: $" + format(charge, ".2f"))
+        print("------------------------------------")
+ 
+ 
+def billing_and_deallocation():
+    room_number = input("Enter room number for checkout: ").strip()
+    if room_number == "":
+        print("Room number cannot be empty.")
+        return
+ 
+    room = find_room(room_number)
+    if room is None:
+        print("Room", room_number, "does not exist.")
+        return
+ 
+    if room_number not in allocations_dict:
+        print("This room has no active allocation.")
+        return
+ 
+    booking = allocations_dict[room_number]
+    total_bill = booking["nightly_rate"] * booking["number_of_nights"]
+ 
+    print("\n===== GUEST BILL =====")
+    print("Room Number:", room_number)
+    print("Customer Name:", booking["customer_name"])
+    print("Nightly Rate: $" + format(booking["nightly_rate"], ".2f"))
+    print("Number of Nights:", booking["number_of_nights"])
+    print("Total Bill: $" + format(total_bill, ".2f"))
+ 
+    del allocations_dict[room_number]
+    room["available"] = True
+ 
+    print("Checkout completed successfully.")
+    print("Room", room_number, "is now available.")
 
 
 if __name__ == "__main__":
